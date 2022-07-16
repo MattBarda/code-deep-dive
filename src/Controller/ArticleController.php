@@ -7,6 +7,9 @@ use App\Repository\ArticleRepository;
 use App\Service\SlackClient;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\HttpKernel;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -17,31 +20,48 @@ class ArticleController extends AbstractController
      * Currently unused: just showing a controller with a constructor!
      */
     private $isDebug;
+    private LoggerInterface $logger;
 
-    public function __construct(bool $isDebug)
+    public function __construct(bool $isDebug, LoggerInterface $logger)
     {
         $this->isDebug = $isDebug;
+        $this->logger = $logger;
+
+        $this->logger->info('controller instantiated');
     }
 
     /**
      * @Route("/", name="app_homepage")
      */
-    public function homepage(ArticleRepository $repository, LoggerInterface $logger)
+    public function homepage(ArticleRepository $repository, LoggerInterface $logger, $isMac, HttpKernelInterface $httpKernel)
     {
         $articles = $repository->findAllPublishedOrderedByNewest();
 
         $logger->info('inside the controller');
 
+//        $request = new Request();
+//        $request->attributes->set('_controller', 'App\\Controller\\PartialController::trendingQuotes');
+//        $request->server->set('REMOTE_ADDR', '127.0.0.1');
+//
+//        $response = $httpKernel->handle(
+//            $request,
+//            HttpKernelInterface::SUB_REQUEST
+//        );
+//        dump($response);
+
         return $this->render('article/homepage.html.twig', [
             'articles' => $articles,
+            'isMac' => $isMac
         ]);
     }
 
     /**
      * @Route("/news/{slug}", name="article_show")
      */
-    public function show(Article $article, SlackClient $slack)
+    public function show(Article $article, SlackClient $slack, ArticleRepository $articleRepository, $isMac)
     {
+        dump($isMac);
+
         if ($article->getSlug() === 'khaaaaaan') {
             $slack->sendMessage('Kahn', 'Ah, Kirk, my old friend...');
         }
